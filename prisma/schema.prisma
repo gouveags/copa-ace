@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  logoUrl   String?
+  region    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  matchesAsTeamA    Match[] @relation("TeamAMatches")
+  matchesAsTeamB    Match[] @relation("TeamBMatches")
+  hallOfFameEntries HallOfFame[]
+
+  @@map("teams")
+}
+
+model Tournament {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  matches        Match[]
+  hallOfFameEntries HallOfFame[]
+
+  @@map("tournaments")
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  tournamentId String
+  teamAId      String
+  teamBId      String
+  scheduledAt  DateTime
+  scoreA       Int?
+  scoreB       Int?
+  status       MatchStatus @default(SCHEDULED)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamA      Team       @relation("TeamAMatches", fields: [teamAId], references: [id])
+  teamB      Team       @relation("TeamBMatches", fields: [teamBId], references: [id])
+
+  @@map("matches")
+}
+
+model News {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  author    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("news")
+}
+
+model Sponsor {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  logoUrl    String
+  websiteUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("sponsors")
+}
+
+model HallOfFame {
+  id           String @id @default(cuid())
+  year         Int
+  tournamentId String
+  winnerTeamId String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  tournament  Tournament @relation(fields: [tournamentId], references: [id])
+  winnerTeam  Team       @relation(fields: [winnerTeamId], references: [id])
+
+  @@map("hall_of_fame")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  CANCELLED
+}
